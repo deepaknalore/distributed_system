@@ -4,6 +4,7 @@ import (
         "context"
         "log"
 	"time"
+	"io"
 
         "google.golang.org/grpc"
         pb "store"
@@ -35,6 +36,17 @@ func main() {
                 log.Fatalf("Get Failed: %v", err1)
         }
 	
+	stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
+	for {
+		value, err2 := stream.Recv()
+		if err2 == io.EOF {
+			break
+		}
+		if err2 != nil {
+			log.Fatalf("GetPrefix Failed: %v", err2)
+		}
+		log.Println(value)
+	}	
 	log.Printf("Greeting: %v", r1.GetValue())
 	_, err2 := c.GetPrefix(ctx, &pb.Key{Key: key})
         if err2 != nil {

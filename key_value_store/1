@@ -13,8 +13,8 @@ import (
 	pb "store"
 )
 
-var m = cmap.New()
 var m1 = make(map[string]string)
+var m = cmap.New()
 
 var (
 	port = ":50051"
@@ -42,18 +42,16 @@ func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
 	var bar = "Bar"
 	if tmp, ok := m.Get(in.GetKey()); ok {
 		bar = tmp.(string)
-		log.Printf("Cmap value: %v", tmp.(string))
+		log.Printf("Cmap value: %v", bar)
 	}
 	return &pb.Value{Value: "The value is " + bar}, nil
 }
 
 func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) error {
 	counter := 0
-	log.Printf("%d", m.Count())
 	for item := range m.Iter() {
-		val := item.Val.(string)
-		log.Printf(val)
-		if err := stream.Send(&pb.Value{Value: val}); err != nil {
+		val := item.Val
+		if err := stream.Send(&pb.Value{Value: val.(string)}); err != nil {
 			return err
 		}
 		counter++
@@ -64,7 +62,7 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 }
 
 func main() {
-	m = cmap.New()
+	m := cmap.New()
 	m1["Hello"] = "world"
 	data, err := ioutil.ReadFile("server/datafile.txt")
 	check(err)
@@ -75,15 +73,34 @@ func main() {
 		fmt.Println(kv[1])
 		m.Set(string(kv[0]), string(kv[1]))
 	}
+	
+	kv := strings.Split(string(lines[0]), ":")
+	fmt.Println(kv[0])
+	fmt.Println(kv[1])
+	key := kv[0]
+	val := kv[1]
+	m.Set(key, val)
+	
+
+	temp, okk := m.Get("foo")
+	fmt.Println(temp)
+	fmt.Println(okk)
+
+	if tmp, ok := m.Get("Lion"); ok {
+		bar := tmp.(string)
+		log.Printf("Cmap value: %v", bar)
+	}
+
+	m.Remove("foo")
+
+	
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	log.Printf("Count in main %d", m.Count())
 	s := grpc.NewServer()
 	pb.RegisterKeyValueStoreServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-	log.Printf("Count in main %d", m.Count())
 }
