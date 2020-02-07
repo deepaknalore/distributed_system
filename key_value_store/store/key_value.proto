@@ -1,8 +1,8 @@
 syntax="proto3"; 
 service KeyValueStore {
 	rpc Set(KeyValue) returns (Response) {}
-	rpc Get(Key) returns (KeyValue) {}
-	rpc GetPrefix(Key) returns (stream KeyValue) {} 
+	rpc Get(Key) returns (Value) {}
+	rpc GetPrefix(Key) returns (stream Value) {} 
 }
 
 message Response {
@@ -16,4 +16,8 @@ message KeyValue {
 
 message Key {
 	string key = 1;
+}
+
+message Value {
+	string value = 1;
 }

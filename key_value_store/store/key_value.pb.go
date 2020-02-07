@@ -149,28 +149,69 @@ func (m *Key) GetKey() string {
 	return ""
 }
 
+type Value struct {
+	Value                string   `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Value) Reset()         { *m = Value{} }
+func (m *Value) String() string { return proto.CompactTextString(m) }
+func (*Value) ProtoMessage()    {}
+func (*Value) Descriptor() ([]byte, []int) {
+	return fileDescriptor_40f3a6d8264e424e, []int{3}
+}
+
+func (m *Value) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Value.Unmarshal(m, b)
+}
+func (m *Value) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Value.Marshal(b, m, deterministic)
+}
+func (m *Value) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Value.Merge(m, src)
+}
+func (m *Value) XXX_Size() int {
+	return xxx_messageInfo_Value.Size(m)
+}
+func (m *Value) XXX_DiscardUnknown() {
+	xxx_messageInfo_Value.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Value proto.InternalMessageInfo
+
+func (m *Value) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Response)(nil), "Response")
 	proto.RegisterType((*KeyValue)(nil), "KeyValue")
 	proto.RegisterType((*Key)(nil), "Key")
+	proto.RegisterType((*Value)(nil), "Value")
 }
 
 func init() { proto.RegisterFile("key_value.proto", fileDescriptor_40f3a6d8264e424e) }
 
 var fileDescriptor_40f3a6d8264e424e = []byte{
-	// 180 bytes of a gzipped FileDescriptorProto
+	// 193 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xcf, 0x4e, 0xad, 0x8c,
 	0x2f, 0x4b, 0xcc, 0x29, 0x4d, 0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x57, 0x52, 0xe0, 0xe2, 0x08,
 	0x4a, 0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0x15, 0x12, 0xe1, 0x62, 0x2d, 0x4a, 0x2d, 0xc8, 0xa9,
 	0x94, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x08, 0x82, 0x70, 0x94, 0x8c, 0xb8, 0x38, 0xbc, 0x53, 0x2b,
 	0xc3, 0x40, 0x7a, 0x84, 0x04, 0xb8, 0x98, 0xb3, 0x53, 0x21, 0xf2, 0x9c, 0x41, 0x20, 0x26, 0x48,
 	0x0f, 0xd8, 0x38, 0x09, 0x26, 0xb0, 0x18, 0x84, 0xa3, 0x24, 0xce, 0xc5, 0xec, 0x9d, 0x5a, 0x89,
-	0xa9, 0xdc, 0x28, 0x8b, 0x8b, 0x17, 0x66, 0x58, 0x70, 0x49, 0x7e, 0x51, 0xaa, 0x90, 0x2c, 0x17,
-	0x73, 0x70, 0x6a, 0x89, 0x10, 0xa7, 0x1e, 0x4c, 0x58, 0x8a, 0x53, 0x0f, 0xe6, 0x20, 0x25, 0x06,
-	0x21, 0x09, 0x2e, 0x66, 0xf7, 0xd4, 0x12, 0x21, 0x16, 0x90, 0xb4, 0x14, 0x42, 0x91, 0x12, 0x83,
-	0x90, 0x02, 0x17, 0xa7, 0x7b, 0x6a, 0x49, 0x40, 0x51, 0x6a, 0x5a, 0x66, 0x05, 0x16, 0x79, 0x03,
-	0xc6, 0x24, 0x36, 0xb0, 0x0f, 0x8d, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0xe5, 0xa0, 0x5b, 0x2a,
-	0xf4, 0x00, 0x00, 0x00,
+	0xa9, 0x5c, 0x49, 0x96, 0x8b, 0x15, 0x62, 0x12, 0x5c, 0x1f, 0x23, 0x92, 0x3e, 0xa3, 0x14, 0x2e,
+	0x5e, 0x98, 0x5d, 0xc1, 0x25, 0xf9, 0x45, 0xa9, 0x42, 0xb2, 0x5c, 0xcc, 0xc1, 0xa9, 0x25, 0x42,
+	0x9c, 0x7a, 0x30, 0x61, 0x29, 0x4e, 0x3d, 0x98, 0x7b, 0x95, 0x18, 0x84, 0x44, 0xb9, 0x98, 0xdd,
+	0x53, 0x4b, 0x84, 0x58, 0x40, 0xd2, 0x52, 0x6c, 0x7a, 0x60, 0x15, 0x4a, 0x0c, 0x42, 0xb2, 0x5c,
+	0x9c, 0xee, 0xa9, 0x25, 0x01, 0x45, 0xa9, 0x69, 0x99, 0x15, 0xe8, 0x92, 0x06, 0x8c, 0x49, 0x6c,
+	0x60, 0xaf, 0x1b, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xd0, 0xa9, 0x46, 0x71, 0x0d, 0x01, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -186,7 +227,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type KeyValueStoreClient interface {
 	Set(ctx context.Context, in *KeyValue, opts ...grpc.CallOption) (*Response, error)
-	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error)
+	Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error)
 	GetPrefix(ctx context.Context, in *Key, opts ...grpc.CallOption) (KeyValueStore_GetPrefixClient, error)
 }
 
@@ -207,8 +248,8 @@ func (c *keyValueStoreClient) Set(ctx context.Context, in *KeyValue, opts ...grp
 	return out, nil
 }
 
-func (c *keyValueStoreClient) Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*KeyValue, error) {
-	out := new(KeyValue)
+func (c *keyValueStoreClient) Get(ctx context.Context, in *Key, opts ...grpc.CallOption) (*Value, error) {
+	out := new(Value)
 	err := c.cc.Invoke(ctx, "/KeyValueStore/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -232,7 +273,7 @@ func (c *keyValueStoreClient) GetPrefix(ctx context.Context, in *Key, opts ...gr
 }
 
 type KeyValueStore_GetPrefixClient interface {
-	Recv() (*KeyValue, error)
+	Recv() (*Value, error)
 	grpc.ClientStream
 }
 
@@ -240,8 +281,8 @@ type keyValueStoreGetPrefixClient struct {
 	grpc.ClientStream
 }
 
-func (x *keyValueStoreGetPrefixClient) Recv() (*KeyValue, error) {
-	m := new(KeyValue)
+func (x *keyValueStoreGetPrefixClient) Recv() (*Value, error) {
+	m := new(Value)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -251,7 +292,7 @@ func (x *keyValueStoreGetPrefixClient) Recv() (*KeyValue, error) {
 // KeyValueStoreServer is the server API for KeyValueStore service.
 type KeyValueStoreServer interface {
 	Set(context.Context, *KeyValue) (*Response, error)
-	Get(context.Context, *Key) (*KeyValue, error)
+	Get(context.Context, *Key) (*Value, error)
 	GetPrefix(*Key, KeyValueStore_GetPrefixServer) error
 }
 
@@ -262,7 +303,7 @@ type UnimplementedKeyValueStoreServer struct {
 func (*UnimplementedKeyValueStoreServer) Set(ctx context.Context, req *KeyValue) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Set not implemented")
 }
-func (*UnimplementedKeyValueStoreServer) Get(ctx context.Context, req *Key) (*KeyValue, error) {
+func (*UnimplementedKeyValueStoreServer) Get(ctx context.Context, req *Key) (*Value, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
 func (*UnimplementedKeyValueStoreServer) GetPrefix(req *Key, srv KeyValueStore_GetPrefixServer) error {
@@ -318,7 +359,7 @@ func _KeyValueStore_GetPrefix_Handler(srv interface{}, stream grpc.ServerStream)
 }
 
 type KeyValueStore_GetPrefixServer interface {
-	Send(*KeyValue) error
+	Send(*Value) error
 	grpc.ServerStream
 }
 
@@ -326,7 +367,7 @@ type keyValueStoreGetPrefixServer struct {
 	grpc.ServerStream
 }
 
-func (x *keyValueStoreGetPrefixServer) Send(m *KeyValue) error {
+func (x *keyValueStoreGetPrefixServer) Send(m *Value) error {
 	return x.ServerStream.SendMsg(m)
 }
 

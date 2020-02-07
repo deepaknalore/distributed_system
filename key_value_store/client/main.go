@@ -35,7 +35,7 @@ func main() {
                 log.Fatalf("Get Failed: %v", err1)
         }
 	
-	log.Printf("Greeting: %v %v", r1.GetKey(), r1.GetValue())
+	log.Printf("Greeting: %v", r1.GetValue())
 	_, err2 := c.GetPrefix(ctx, &pb.Key{Key: key})
         if err2 != nil {
                 log.Fatalf("GetPrefix Failed: %v", err2)
