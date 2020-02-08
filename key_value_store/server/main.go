@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"os"
+	"os/exec"
+	"bytes"
 
 	"google.golang.org/grpc"
 	"github.com/orcaman/concurrent-map"
@@ -15,6 +18,12 @@ import (
 
 var m = cmap.New()
 var m1 = make(map[string]string)
+var setcount = 0
+var f, err = os.OpenFile("server/log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+var MAX_LOG_SET_COUNT = 100000
+// if err != nil {
+// 		log.Fatal(err)
+// 	}
 
 var (
 	port = ":50051"
@@ -31,10 +40,51 @@ func check(e error) {
 }
 
 func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error) {
+
+	if setcount == MAX_LOG_SET_COUNT {
+		tempFile, tempFileErr := os.Create("server/temp.txt")
+		if tempFileErr != nil {
+		  return &pb.Response{Reply: false}, tempFileErr
+		}
+		defer tempFile.Close()
+
+		var sanpBuffer bytes.Buffer
+		for item := range m.Iter() {
+			key := item.Key
+			val := item.Val.(string)
+			sanpBuffer.WriteString(key+":"+val+"\n")
+		}
+		if _, tempWriteErr := tempFile.WriteString(sanpBuffer.String()); tempWriteErr != nil {
+			tempFile.Close()
+			log.Fatal(tempWriteErr)
+		}
+		exec.Command("mv temp.txt datafile.txt").Output()
+		f, err = os.Create("server/log.txt")
+		setcount = 0
+	}
+
 	key := in.GetKey()
 	val := in.GetValue()
+
+	var buffer bytes.Buffer
+	buffer.WriteString(key)
+	buffer.WriteString(":")
+	buffer.WriteString(val)
+	buffer.WriteString("\n")
+	if _, err := f.WriteString(buffer.String()); err != nil {
+		f.Close()
+		log.Fatal(err)
+	}
+	//os.File.Sync() 
+	f.Sync()
 	m.Set(key, val)
+	setcount = setcount + 1
+	log.Printf("Set count: %d", setcount)
 	return &pb.Response{Reply: true}, nil
+
+	// if err := f.Close(); err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
@@ -64,7 +114,10 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 }
 
 func main() {
-	m = cmap.New()
+
+
+	out, err := exec.Command("ls").Output()
+	log.Printf("Output of ls command: %s", string(out))
 	m1["Hello"] = "world"
 	data, err := ioutil.ReadFile("server/datafile.txt")
 	check(err)
