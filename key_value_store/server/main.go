@@ -51,12 +51,14 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 	counter := 0
 	log.Printf("%d", m.Count())
 	for item := range m.Iter() {
-		val := item.Val.(string)
-		log.Printf(val)
-		if err := stream.Send(&pb.Value{Value: val}); err != nil {
-			return err
-		}
+		if strings.HasPrefix(item.Key,in.GetKey()) {
+			val := item.Val.(string)
+			log.Printf(val)
+			if err := stream.Send(&pb.Value{Value: val}); err != nil {
+				return err
+			}
 		counter++
+		}
 	}	
 
 	log.Printf("Sent %d items", counter)

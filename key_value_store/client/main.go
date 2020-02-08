@@ -22,10 +22,10 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewKeyValueStoreClient(conn)
-	key := "des2"
+	key := "des21"
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "1"})
+	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "3"})
 	if err != nil {
 		log.Fatalf("Set Failed: %v", err)
 	}
@@ -35,8 +35,8 @@ func main() {
 	if err1 != nil {
                 log.Fatalf("Get Failed: %v", err1)
         }
-	
-	stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
+ 	log.Printf("Greeting: %t", r1.GetValue())	
+	stream, err := c.GetPrefix(ctx, &pb.Key{Key: "des2"})
 	for {
 		value, err2 := stream.Recv()
 		if err2 == io.EOF {
@@ -47,11 +47,5 @@ func main() {
 		}
 		log.Println(value)
 	}	
-	log.Printf("Greeting: %v", r1.GetValue())
-	_, err2 := c.GetPrefix(ctx, &pb.Key{Key: key})
-        if err2 != nil {
-                log.Fatalf("GetPrefix Failed: %v", err2)
-        }
 	
-
 }
