@@ -52,7 +52,7 @@ func GenerateKeys() {
 // 	}
 // }
 
-func ReadWorkload(c, ctx) {
+func ReadWorkload(c *, ctx) {
 	var operations = 100
 	data, err := ioutil.ReadFile("client/keys.txt")
 	check(err)
