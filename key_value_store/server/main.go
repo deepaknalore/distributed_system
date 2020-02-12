@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"bytes"
+	"time"
 
 	"google.golang.org/grpc"
 	"github.com/orcaman/concurrent-map"
@@ -18,9 +19,16 @@ import (
 
 var m = cmap.New()
 var m1 = make(map[string]string)
-var setcount = 0
 var f, err = os.OpenFile("server/log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 var MAX_LOG_SET_COUNT = 20000
+//Stats variables start
+var setcount = 0
+var getcount = 0
+var getprefixcount = 0
+var successfulsetcount = 0
+var successfulegetcount =0
+var successfulgetprefixcount = 0
+//Stats variables end
 // if err != nil {
 // 		log.Fatal(err)
 // 	}
@@ -66,20 +74,14 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 	key := in.GetKey()
 	val := in.GetValue()
 
-	var buffer bytes.Buffer
-	buffer.WriteString(key)
-	buffer.WriteString(":")
-	buffer.WriteString(val)
-	buffer.WriteString("\n")
-	if _, err := f.WriteString(buffer.String()); err != nil {
+	if _, err := f.WriteString(key+":"+val+"\n"); err != nil {
 		f.Close()
 		log.Fatal(err)
 	}
-	//os.File.Sync() 
 	f.Sync()
 	m.Set(key, val)
 	setcount = setcount + 1
-	log.Printf("Set count: %d", setcount)
+	//log.Printf("Set count: %d", setcount)
 	return &pb.Response{Reply: true}, nil
 
 	// if err := f.Close(); err != nil {
@@ -89,12 +91,13 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 
 func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
 	fmt.Printf("Received: %v", in.GetKey())
-	var val = "DefaultValue"
+	var val = ""
 	if tmp, ok := m.Get(in.GetKey()); ok {
 		val = tmp.(string)
 		fmt.Printf("Value: %v\n", val)
 	}
-	return &pb.Value{Value: "The value is " + val}, nil
+	getcount += 1
+	return &pb.Value{Value: val}, nil
 }
 
 func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) error {
@@ -110,9 +113,22 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 		counter++
 		}
 	}	
-
+	getprefixcount += 1
 	log.Printf("Sent %d items", counter)
 	return nil
+}
+
+// Taken from https://gist.github.com/ryanfitz/4191392
+func doEvery(d time.Duration, f func(time.Time)) {
+	for x := range time.Tick(d) {
+		f(x)
+	}
+}
+
+func Stat(t time.Time) {
+	fmt.Printf("The total number of Get operations are: %d\n", getcount)
+	fmt.Printf("The total number of Set operations are: %d\n", setcount)
+	fmt.Printf("The total number of getPrefix operations are: %d\n", getprefixcount)
 }
 
 func RestoreData() {
@@ -156,11 +172,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	fmt.Printf("The number of elements in the KVstore are %d", m.Count())
+	//fmt.Printf("The number of elements in the KVstore are %d", m.Count())
+	// doEvery(10*time.Second, Stat)
 	s := grpc.NewServer()
 	pb.RegisterKeyValueStoreServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
-	log.Printf("The number of elements in the KVstore are %d", m.Count())
+	fmt.Printf("The number of elements in the KVstore are %d", m.Count())
 }

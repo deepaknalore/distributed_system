@@ -39,7 +39,7 @@ func RandStringBytes(n int) string {
 func GenerateKeys(keycount int) {
 	keysfile, _ := os.Create("client/keys.txt")
 	var key = ""
-	for i := 0; i < keyCount; i++ { 
+	for i := 0; i < keycount; i++ { 
 		key = RandStringBytes(4)
 		keysfile.WriteString(key+"\n")
 	}
@@ -47,24 +47,35 @@ func GenerateKeys(keycount int) {
 	keysfile.Close()
 }
 
-func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int) {
+func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
+	var succoperations = 0
 	data, err := ioutil.ReadFile("client/keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
-	for i := 0; i < len(keys)-1; i++ {
-		if len(keys[i]) > 0 {
-			var key = keys[i]
-			var value = RandStringBytes(valuesize)
-			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: key, Value: value})
+	writes := len(keys)
+	if operations > writes {
+		writes = operations
+	}
+	totalkeys := len(keys)
+	start := time.Now()
+	for i := 0; i < writes; i++ {
+		if len(keys[i%totalkeys]) > 0 {
+			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[i%totalkeys], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
-				log.Printf("Key : %s", string(key))
-				log.Printf("Value : %s", string(value))
+				//log.Printf("Key : %s", string(key))
+				//log.Printf("Value : %s", string(value))
 				log.Fatalf("Set Failed in WriteWorkload: %v", err)
 				//log.Printf("Set Failed in WriteWorkload: %v", err)
+			}
+			if setresult.GetReply() == true {
+				succoperations += 1
 			}
 			log.Printf("Greeting: %t", setresult.GetReply())
 		}
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("The number of successful Writes is : %d\n", succoperations)
+	fmt.Printf("The time taken for all the Write operations is %s\n: ", elapsed)
 }
 
 func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int) {
@@ -85,14 +96,17 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 		}
 	}
 	elapsed := time.Since(start)
-	fmt.Printf("The number of successful operations is : %d\n", succoperations)
+	fmt.Printf("The number of successful Reads is : %d\n", succoperations)
 	fmt.Printf("The time taken for all the get operations is %s\n: ", elapsed)
 }
 
 func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
+	var readcount = 0
+	var updatecount = 0
 	data, err := ioutil.ReadFile("client/keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
+	start := time.Now()
 	for i := 0; i < operations; i++ {
 		rand1 := rand.Intn(2)
 		rand2 := rand.Intn(len(keys))
@@ -102,20 +116,26 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 				log.Fatalf("Not able to get the value for key, got error : %v", err)
 			}
 			if result != nil {
+				readcount += 1
 				fmt.Printf(string(result.Value) + "\n")
 			}
 		} else {
-			var key = keys[rand2]
-			var value = RandStringBytes(valuesize)
-			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: key, Value: value})
+			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[rand2], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
-				log.Printf("Key : %s", string(key))
-				log.Printf("Value : %s", string(value))
+				//log.Printf("Key : %s", string(key))
+				//log.Printf("Value : %s", string(value))
 				log.Fatalf("Set Failed in WriteWorkload: %v", err)
+			}
+			if setresult.GetReply() == true {
+				updatecount += 1
 			}
 			log.Printf("Greeting: %t", setresult.GetReply())
 		}
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("The number of successful Reads is : %d\n", readcount)
+	fmt.Printf("The number of successful Updates is : %d\n", updatecount)
+	fmt.Printf("The time taken for all the operations is %s\n: ", elapsed)
 }
 
 func main() {
@@ -133,19 +153,20 @@ func main() {
 	defer cancel()
 
 	//WriteWorkload(c, ctx, 40)
-	ReadWorkload(c, ctx, 100)
+	//ReadWorkload(c, ctx, 10000)
+	//ReadUpdateWorkload(c, ctx, 40, 1000)
 
-	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "1"})
+	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "10"})
 	if err != nil {
 		log.Fatalf("Set Failed: %v", err)
 	}
 	log.Printf("Greeting: %t", r.GetReply())
 	
-	r1, err1 := c.Get(ctx, &pb.Key{Key: key})
+	r1, err1 := c.Get(ctx, &pb.Key{Key: "des2"})
 	if err1 != nil {
                 log.Fatalf("Get Failed: %v", err1)
         }
-    log.Printf(string(r1.Value))
+    fmt.Printf("%s\n",string(r1.Value))
 	
 	// stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
 	// for {
