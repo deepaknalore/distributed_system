@@ -1,22 +1,24 @@
 # Go Parameters
 GOCMD=go
+GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOPATH=$(shell go env GOPATH)
 GOBIN=$(shell go env GOBIN)
 GOROOT=$(shell go env GOROOT)
+SERVERBINARY:=kvserver
+CLIENTBINARY:=kvclient
 PROTOC := $(shell which protoc)
+PROTOC_GEN_GO := $(GOROOT)/bin/protoc-gen-go
 
-all: setup
+.PHONY: setup server client
+all: server client
 server:
-	go run server/main.go
-	
+	$(GOBUILD) -o $(SERVERBINARY) server/main.go
 client:
-	go run client/go
-	
+	$(GOBUILD) -o $(CLIENTBINARY) client/main.go
 setup:
-	protoc -I store/ store/key_value.proto --go_out=plugins=grpc:$(GOROOT)/src/store
-	
-deps:
-	$(GOGET) github.com/markbates/goth
-	$(GOGET) github.com/markbates/pop
+	go get -u github.com/golang/protobuf/protoc-gen-go
+	mkdir $(GOBIN)/src/store
+	$(PROTOC) -I store/ store/key_value.proto --go_out=plugins=grpc:$(GOPATH)/src/store
+	$(GOCMD) install store/key_value.pb.go
