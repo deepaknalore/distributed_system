@@ -12,16 +12,20 @@ import (
 	"strings"
 	"time"
 	"flag"
+	"math"
+	"math/rand"
 
 	"github.com/orcaman/concurrent-map"
 	"google.golang.org/grpc"
 	pb "store"
 )
 
+const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 var m = cmap.New()
 var m1 = make(map[string]string)
 var f, err = os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-var MAX_LOG_SET_COUNT = 100
+var MAX_LOG_SET_COUNT = 1000000
 //Stats variables start
 var successfulsetcount = 0
 var successfulegetcount =0
@@ -32,7 +36,8 @@ var successfulgetprefixcount = 0
 // 	}
 
 var (
-	port = ":50051"
+	//port = ":50051"
+	port = ":56567"
 	logFile string
 	dataFile string
 	startTime string
@@ -129,7 +134,7 @@ func RestoreData() {
 	data, err := ioutil.ReadFile("data.txt")
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
-		numLines := len(lines)
+		numLines := len(lines)-1
 		fmt.Printf("Total number of key-value pairs in data file : %d\n", numLines)
 		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
@@ -142,7 +147,7 @@ func RestoreData() {
 	data, err = ioutil.ReadFile("log.txt")
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
-		numLines := len(lines)
+		numLines := len(lines)-1
 		fmt.Printf("Total number of key-value pairs in log file : %d\n", numLines)
 		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
@@ -153,6 +158,34 @@ func RestoreData() {
 	}
 	fmt.Printf("The data has restoration process is completed\n")
 	fmt.Printf("The total number of key-values paris in the map is: %d\n", m.Count())
+}
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func GenerateKeyValueData(dbdata float64, keysize int, valuesize int) {
+	fmt.Printf("Started to generate key value data\n")
+	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
+	//var count = 10
+	fmt.Printf("The count of key values that will be generated: %s\n", string(count))
+	keyfile, _ := os.Create("keys.txt")
+	datafile, _ := os.Create("data.txt")
+	for i := 0; i < count; i++ {
+		var key = RandStringBytes(keysize)
+		var val = RandStringBytes(valuesize)
+		keyfile.WriteString(key + "\n")
+		datafile.WriteString(key+":"+val+"\n")
+	}
+	keyfile.Sync()
+	keyfile.Close()
+	datafile.Sync()
+	datafile.Close()
+	fmt.Printf("Generation of key value data is complete\n")
 }
 
 func main() {
@@ -167,6 +200,7 @@ func main() {
 
 	fmt.Printf("\nServer started with the following info:\nServer start time: %s\nLogFile: %v\nDataFile: %v\n", startTime, logFile, dataFile)
 
+	GenerateKeyValueData(1.0, 128, 512)
 	RestoreData()
 	
 	lis, err := net.Listen("tcp", port)

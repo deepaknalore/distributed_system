@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	//"math"
+	"math"
 	"os"
 	pb "store"
 	"strings"
@@ -16,7 +16,8 @@ import (
 )
 
 var (
-        port = "localhost:50051"
+        //port = "localhost:50051"
+        port = "10.10.1.2:56567"
         keySize int
         valueSize int
         dbSize float64
@@ -38,9 +39,9 @@ func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int,
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	writes := len(keys)-1
-	if operations < writes {
-		writes = operations
-	}
+	//if operations < writes {
+	//	writes = operations
+	//}
 	fmt.Printf("The number of writes that will be performed : %d\n", writes)
 	totalkeys := len(keys)
 	start := time.Now()
@@ -136,8 +137,8 @@ func RandStringBytes(n int) string {
 }
 
 func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
-	//var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
-	var count = 10
+	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
+	//var count = 10
 	fmt.Printf(string(count))
 	keyfile, _ := os.Create("keys.txt")
 	var key = ""
