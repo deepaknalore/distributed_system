@@ -172,7 +172,7 @@ func GenerateKeyValueData(dbdata float64, keysize int, valuesize int) {
 	fmt.Printf("Started to generate key value data\n")
 	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
 	//var count = 10
-	fmt.Printf("The count of key values that will be generated: %s\n", string(count))
+	fmt.Printf("The count of key values that will be generated: %d\n", count)
 	keyfile, _ := os.Create("keys.txt")
 	datafile, _ := os.Create("data.txt")
 	for i := 0; i < count; i++ {
