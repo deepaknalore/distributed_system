@@ -19,6 +19,7 @@ var (
 		iteration int
         keySize int
         valueSize int
+        dbSize int
         operation string
 )
 
@@ -147,10 +148,12 @@ func main() {
 	flag.IntVar(&iteration, "iter", 1234, "-iter <int>")
 	flag.IntVar(&keySize, "keySize", 4, "-keySize <int> in terms of bytes ")
 	flag.IntVar(&valueSize, "valueSize", 10, "-valueSize <int> in terms of bytes")
+	flag.IntVar(&dbSize, "dbSize", 10, "-dbSize <int> in terms of GB")
 	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
 	flag.Parse()
 	//GenerateKeys(1000)
-	log.Printf("\nClient started with the following info:\n Number of iterations: %d\n Key Size: %d\n Value Size: %d\n Operation: %v", iteration,keySize,valueSize,operation)
+	log.Printf("\nClient started with the following info:\n DB-Size: %d \n Number of iterations: %d\n Key Size: " +
+		"%d\n Value Size: %d\n Operation: %v", dbSize, iteration,keySize,valueSize,operation)
 	conn, err := grpc.Dial(port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)

@@ -41,4 +41,4 @@ Important links to understand the underlying concepts:
 Server:
 ./kvserver -logFile log.txt -dataFile data.txt
 Client:
-./kvclient -iter 10 -keySize 10 -valueSize 10 -operation read
+/kvclient -iter 10 -keySize 10 -valueSize 10 -operation read -dbSize 1
