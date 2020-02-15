@@ -20,7 +20,7 @@ import (
 
 var m = cmap.New()
 var m1 = make(map[string]string)
-var f, err = os.OpenFile("server/log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+var f, err = os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 var MAX_LOG_SET_COUNT = 20000
 //Stats variables start
 var successfulsetcount = 0
@@ -45,16 +45,10 @@ type server struct {
 	pb.KeyValueStoreServer
 }
 
-func check(e error) {
-    if e != nil {
-        panic(e)
-    }
-}
-
 func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error) {
 
 	if setcount == MAX_LOG_SET_COUNT {
-		tempFile, tempFileErr := os.Create("server/temp.txt")
+		tempFile, tempFileErr := os.Create("temp.txt")
 		if tempFileErr != nil {
 		  return &pb.Response{Reply: false}, tempFileErr
 		}
@@ -70,8 +64,8 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 			tempFile.Close()
 			log.Fatal(tempWriteErr)
 		}
-		exec.Command("mv", "server/temp.txt", "server/datafile.txt").Output()
-		f, err = os.Create("server/log.txt")
+		exec.Command("mv", "temp.txt", "data.txt").Output()
+		f, err = os.Create("log.txt")
 		setcount = 0
 	}
 
@@ -140,10 +134,9 @@ func Stat(t time.Time) {
 }
 
 func RestoreData() {
-	// Restoring data from the checkpointed DataFile
+	// Restoring data from the checkpointed
 	// How to handle error where there is not data in DataFile is not clear
-	data, err := ioutil.ReadFile("server/datafile.txt")
-	check(err)
+	data, err := ioutil.ReadFile("server/data.txt")
 	log.Printf(string(data))
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
@@ -158,7 +151,6 @@ func RestoreData() {
 	}
 	// Restoring data that was logged after the checkpoing was done
 	data, err = ioutil.ReadFile("server/log.txt")
-	check(err)
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
 		for i := 0; i < len(lines); i++ { 

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"math"
 	"os"
 	pb "store"
 	"strings"
@@ -16,14 +17,14 @@ import (
 
 var (
         port = "localhost:50051"
-		iteration int
         keySize int
         valueSize int
-        dbSize int
+        dbSize float64
         operation string
+        opCount int
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func check(e error) {
     if e != nil {
@@ -42,7 +43,7 @@ func RandStringBytes(n int) string {
 }
 
 func GenerateKeys(keycount int) {
-	keysfile, _ := os.Create("client/keys.txt")
+	keysfile, _ := os.Create("keys.txt")
 	var key = ""
 	for i := 0; i < keycount; i++ { 
 		key = RandStringBytes(4)
@@ -54,7 +55,7 @@ func GenerateKeys(keycount int) {
 
 func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
 	var succoperations = 0
-	data, err := ioutil.ReadFile("client/keys.txt")
+	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	writes := len(keys)
@@ -85,13 +86,14 @@ func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int,
 
 func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int) {
 	var succoperations = 0
-	data, err := ioutil.ReadFile("client/keys.txt")
+	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	//Measuring time, taken from: https://coderwall.com/p/cp5fya/measuring-execution-time-in-go
 	start := time.Now()
 	for i := 0; i < operations; i++ {
-		result, error := c.Get(ctx, &pb.Key{Key: keys[i%len(keys)]})
+		rand := rand.Intn(len(keys))
+		result, error := c.Get(ctx, &pb.Key{Key: keys[rand]})
 		if error != nil {
 			log.Fatalf("Not able to get the value for key, got error : %v", err)
 		}
@@ -108,7 +110,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
 	var readcount = 0
 	var updatecount = 0
-	data, err := ioutil.ReadFile("client/keys.txt")
+	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	start := time.Now()
@@ -143,17 +145,30 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	fmt.Printf("The time taken for all the operations is %s\n: ", elapsed)
 }
 
+func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
+	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
+	fmt.Printf(string(count))
+	keyfile, _ := os.Create("keys.txt")
+	var key = ""
+	for i := 0; i < count; i++ {
+		key = RandStringBytes(keysize)
+		keyfile.WriteString(key + "\n")
+	}
+	keyfile.Sync()
+	keyfile.Close()
+}
+
 func main() {
 
-	flag.IntVar(&iteration, "iter", 1234, "-iter <int>")
 	flag.IntVar(&keySize, "keySize", 4, "-keySize <int> in terms of bytes ")
 	flag.IntVar(&valueSize, "valueSize", 10, "-valueSize <int> in terms of bytes")
-	flag.IntVar(&dbSize, "dbSize", 10, "-dbSize <int> in terms of GB")
+	flag.Float64Var(&dbSize, "dbSize", 1.0, "-dbSize <float64> in terms of GB")
+	flag.IntVar(&opCount, "operationCount", 1000, "-operationCount <int>")
 	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
 	flag.Parse()
 	//GenerateKeys(1000)
-	log.Printf("\nClient started with the following info:\n DB-Size: %d \n Number of iterations: %d\n Key Size: " +
-		"%d\n Value Size: %d\n Operation: %v", dbSize, iteration,keySize,valueSize,operation)
+	log.Printf("\nClient started with the following info:\n DB-Size: %d \n Number of operations: %d\n Key Size: " +
+		"%d\n Value Size: %d\n Operation: %v", dbSize, opCount,keySize,valueSize,operation)
 	conn, err := grpc.Dial(port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -165,12 +180,15 @@ func main() {
 	defer cancel()
 
 	switch operation {
+	case "generate_data":
+		GenerateKeyData(dbSize, keySize, valueSize)
+		WriteWorkload(c, ctx, valueSize, 0)
 	case "read":
-		ReadWorkload(c, ctx, 10000)
-	case "read_write":
-		ReadUpdateWorkload(c, ctx, 40, 1000)
+		ReadWorkload(c, ctx, opCount)
+	case "read_update":
+		ReadUpdateWorkload(c, ctx, valueSize, opCount)
 	case "write":
-		//WriteWorkload(c, ctx, 40)
+		WriteWorkload(c, ctx, valueSize, opCount)
 	}
 
 	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "10"})
