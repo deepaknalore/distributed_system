@@ -1,21 +1,25 @@
 package main
 
 import (
-        "context"
-        "log"
-		"time"
-		"math/rand"
-		"os"
-		"io/ioutil"
-		"strings"
-		"fmt"
-
-        "google.golang.org/grpc"
-        pb "store"
+	"context"
+	"flag"
+	"fmt"
+	"google.golang.org/grpc"
+	"io/ioutil"
+	"log"
+	"math/rand"
+	"os"
+	pb "store"
+	"strings"
+	"time"
 )
 
 var (
         port = "localhost:50051"
+		iteration int
+        keySize int
+        valueSize int
+        operation string
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -140,8 +144,13 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 
 func main() {
 
+	flag.IntVar(&iteration, "iter", 1234, "-iter <int>")
+	flag.IntVar(&keySize, "keySize", 4, "-keySize <int> in terms of bytes ")
+	flag.IntVar(&valueSize, "valueSize", 10, "-valueSize <int> in terms of bytes")
+	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
+	flag.Parse()
 	//GenerateKeys(1000)
-
+	log.Printf("\nClient started with the following info:\n Number of iterations: %d\n Key Size: %d\n Value Size: %d\n Operation: %v", iteration,keySize,valueSize,operation)
 	conn, err := grpc.Dial(port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -152,9 +161,14 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	//WriteWorkload(c, ctx, 40)
-	//ReadWorkload(c, ctx, 10000)
-	//ReadUpdateWorkload(c, ctx, 40, 1000)
+	switch operation {
+	case "read":
+		ReadWorkload(c, ctx, 10000)
+	case "read_write":
+		ReadUpdateWorkload(c, ctx, 40, 1000)
+	case "write":
+		//WriteWorkload(c, ctx, 40)
+	}
 
 	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "10"})
 	if err != nil {
@@ -167,6 +181,13 @@ func main() {
                 log.Fatalf("Get Failed: %v", err1)
         }
     fmt.Printf("%s\n",string(r1.Value))
+
+	stat, err := c.GetStats(ctx, &pb.StatRequest{})
+	if err!= nil {
+		log.Fatalf("Stat retrieval failed: %v", err)
+	}
+	log.Printf("\n\nStats:\n Server- Start time: %v \n Set-Count : %d\n Get-count : %d\n GetPrefix-count : %d\n",
+		stat.StartTime, stat.SetCount, stat.GetCount, stat.GetPrefixCount)
 	
 	// stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
 	// for {
@@ -185,6 +206,7 @@ func main() {
  //        if err2 != nil {
  //                log.Fatalf("GetPrefix Failed: %v", err2)
  //        }
+
 	
 
 }

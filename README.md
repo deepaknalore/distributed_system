@@ -36,3 +36,9 @@ Important links to understand the underlying concepts:
 2. https://grpc.io/docs/guides/concepts/
 3. https://grpc.io/docs/tutorials/basic/go/
 4. https://godoc.org/google.golang.org/grpc
+
+# Usage:
+Server:
+./kvserver -logFile log.txt -dataFile data.txt
+Client:
+./kvclient -iter 10 -keySize 10 -valueSize 10 -operation read

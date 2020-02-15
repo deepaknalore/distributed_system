@@ -2,7 +2,8 @@ syntax="proto3";
 service KeyValueStore {
 	rpc Set(KeyValue) returns (Response) {}
 	rpc Get(Key) returns (Value) {}
-	rpc GetPrefix(Key) returns (stream Value) {} 
+	rpc GetPrefix(Key) returns (stream Value) {}
+	rpc GetStats(StatRequest) returns (Stat) {}
 }
 
 message Response {
@@ -21,3 +22,12 @@ message Key {
 message Value {
 	string value = 1;
 }
+
+message Stat {
+    string start_time = 1;
+    int32 set_count = 2;
+    int32 get_count = 3;
+    int32 get_prefix_count = 4;
+}
+
+message StatRequest {}

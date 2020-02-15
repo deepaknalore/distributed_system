@@ -1,19 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"log"
-	"net"
 	"fmt"
 	"io/ioutil"
-	"strings"
+	"log"
+	"net"
 	"os"
 	"os/exec"
-	"bytes"
+	"strings"
 	"time"
+	"flag"
 
-	"google.golang.org/grpc"
 	"github.com/orcaman/concurrent-map"
+	"google.golang.org/grpc"
 	pb "store"
 )
 
@@ -22,9 +23,6 @@ var m1 = make(map[string]string)
 var f, err = os.OpenFile("server/log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 var MAX_LOG_SET_COUNT = 20000
 //Stats variables start
-var setcount = 0
-var getcount = 0
-var getprefixcount = 0
 var successfulsetcount = 0
 var successfulegetcount =0
 var successfulgetprefixcount = 0
@@ -35,6 +33,12 @@ var successfulgetprefixcount = 0
 
 var (
 	port = ":50051"
+	logFile string
+	dataFile string
+	startTime string
+	setcount int
+	getcount int
+	getprefixcount int
 )
 
 type server struct {
@@ -118,6 +122,10 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 	return nil
 }
 
+func (s* server) GetStats(ctx context.Context, in *pb.StatRequest) (*pb.Stat, error) {
+	return &pb.Stat{StartTime: startTime, SetCount: int32(setcount), GetCount: int32(getcount), GetPrefixCount: int32(getprefixcount)}, nil
+}
+
 // Taken from https://gist.github.com/ryanfitz/4191392
 func doEvery(d time.Duration, f func(time.Time)) {
 	for x := range time.Tick(d) {
@@ -165,6 +173,16 @@ func RestoreData() {
 }
 
 func main() {
+
+	startTime = time.Now().String()
+	flag.StringVar(&logFile, "logFile", "log.txt", "-log <String> - file for writing logs")
+	flag.StringVar(&dataFile, "dataFile", "data.txt", "-data <String> - file for writing data")
+	flag.Parse()
+	setcount = 0
+	getcount = 0
+	getprefixcount = 0
+
+	log.Printf("\nServer started with the following info:\n LogFile: %v\n DataFile: %v\n", logFile,dataFile)
 
 	RestoreData()
 	

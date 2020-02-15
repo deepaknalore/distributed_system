@@ -1,0 +1,21 @@
+# Go Parameters
+GOCMD=go
+GOBUILD=$(GOCMD) build
+GOTEST=$(GOCMD) test
+GOGET=$(GOCMD) get
+GOPATH=$(shell go env GOPATH)
+GOBIN=$(shell go env GOBIN)
+GOROOT=$(shell go env GOROOT)
+SERVERBINARY:=kvserver
+CLIENTBINARY:=kvclient
+PROTOC := $(shell which protoc)
+
+
+.PHONY: server clien setup
+all:server client
+server:
+	$(GOBUILD) -o $(SERVERBINARY) server/main.go
+client:
+	$(GOBUILD) -o $(CLIENTBINARY) client/main.go
+setup:
+	protoc -I store/ store/key_value.proto --go_out=plugins=grpc:$(GOROOT)/src
