@@ -81,7 +81,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 		}
 		if result != nil {
 			succoperations = succoperations + 1
-			fmt.Printf(string(result.Value) + "\n")
+			//fmt.Printf(string(result.Value) + "\n")
 		}
 	}
 	elapsed := time.Since(start)
