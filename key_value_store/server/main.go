@@ -16,6 +16,7 @@ import (
 	"math/rand"
 
 	"github.com/orcaman/concurrent-map"
+	//"github.com/nithinv13/concurrent-map"
 	"google.golang.org/grpc"
 	pb "store"
 )
@@ -190,6 +191,7 @@ func GenerateKeyValueData(dbdata float64, keysize int, valuesize int) {
 
 func main() {
 
+	fmt.Printf("Shard count: %d", cmap.SHARD_COUNT)
 	startTime = time.Now().String()
 	flag.StringVar(&logFile, "logFile", "log.txt", "-log <String> - file for writing logs")
 	flag.StringVar(&dataFile, "dataFile", "data.txt", "-data <String> - file for writing data")
@@ -200,7 +202,7 @@ func main() {
 
 	fmt.Printf("\nServer started with the following info:\nServer start time: %s\nLogFile: %v\nDataFile: %v\n", startTime, logFile, dataFile)
 
-	GenerateKeyValueData(1.0, 128, 512)
+	//GenerateKeyValueData(1.0, 128, 512)
 	RestoreData()
 	
 	lis, err := net.Listen("tcp", port)

@@ -77,7 +77,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 		rand := rand.Intn(len(keys)-1)
 		result, error := c.Get(ctx, &pb.Key{Key: keys[rand]})
 		if error != nil {
-			log.Fatalf("Not able to get the value for key, got error : %v", err)
+			//log.Fatalf("Not able to get the value for key %v, got error : %v", keys[rand], err)
 		}
 		if result != nil {
 			succoperations = succoperations + 1
@@ -102,7 +102,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 		if rand1 == 0 {
 			result, error := c.Get(ctx, &pb.Key{Key: keys[rand2]})
 			if error != nil {
-				log.Fatalf("Not able to get the value for key, got error : %v", err)
+				//log.Fatalf("Not able to get the value for key, got error : %v", err)
 			}
 			if result != nil {
 				readcount += 1
@@ -112,7 +112,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[rand2], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
 				//fmt.Printf("Key : %s", string(keys[rand2]))
-				log.Fatalf("Set Failed in WriteWorkload: %v", err)
+				//log.Fatalf("Set Failed in WriteWorkload: %v", err)
 			}
 			if setresult.GetReply() == true {
 				updatecount += 1
@@ -168,7 +168,7 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewKeyValueStoreClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 
 	switch operation {
