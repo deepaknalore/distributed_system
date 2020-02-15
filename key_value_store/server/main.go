@@ -21,7 +21,7 @@ import (
 var m = cmap.New()
 var m1 = make(map[string]string)
 var f, err = os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-var MAX_LOG_SET_COUNT = 20000
+var MAX_LOG_SET_COUNT = 100
 //Stats variables start
 var successfulsetcount = 0
 var successfulegetcount =0
@@ -48,6 +48,8 @@ type server struct {
 func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error) {
 
 	if setcount == MAX_LOG_SET_COUNT {
+		MAX_LOG_SET_COUNT = 10*MAX_LOG_SET_COUNT
+		fmt.Printf("Checkpoint triggered\n")
 		tempFile, tempFileErr := os.Create("temp.txt")
 		if tempFileErr != nil {
 		  return &pb.Response{Reply: false}, tempFileErr
@@ -56,17 +58,18 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 
 		var sanpBuffer bytes.Buffer
 		for item := range m.Iter() {
-			key := item.Key
-			val := item.Val.(string)
-			sanpBuffer.WriteString(key+":"+val+"\n")
+			sanpBuffer.WriteString(item.Key+":"+item.Val.(string)+"\n")
 		}
 		if _, tempWriteErr := tempFile.WriteString(sanpBuffer.String()); tempWriteErr != nil {
+			tempFile.Sync()
 			tempFile.Close()
 			log.Fatal(tempWriteErr)
 		}
 		exec.Command("mv", "temp.txt", "data.txt").Output()
 		f, err = os.Create("log.txt")
 		setcount = 0
+		MAX_LOG_SET_COUNT = MAX_LOG_SET_COUNT/10
+		fmt.Printf("Checkpointing completed")
 	}
 
 	key := in.GetKey()
