@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"math"
+	//"math"
 	"os"
 	pb "store"
 	"strings"
@@ -32,40 +32,21 @@ func check(e error) {
     }
 }
 
-// The below function is taken from:
-// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
-func RandStringBytes(n int) string {
-    b := make([]byte, n)
-    for i := range b {
-        b[i] = letterBytes[rand.Intn(len(letterBytes))]
-    }
-    return string(b)
-}
-
-func GenerateKeys(keycount int) {
-	keysfile, _ := os.Create("keys.txt")
-	var key = ""
-	for i := 0; i < keycount; i++ { 
-		key = RandStringBytes(4)
-		keysfile.WriteString(key+"\n")
-	}
-	keysfile.Sync()
-	keysfile.Close()
-}
-
 func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
 	var succoperations = 0
 	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
-	writes := len(keys)
-	if operations > writes {
+	writes := len(keys)-1
+	if operations < writes {
 		writes = operations
 	}
+	fmt.Printf("The number of writes that will be performed : %d\n", writes)
 	totalkeys := len(keys)
 	start := time.Now()
 	for i := 0; i < writes; i++ {
 		if len(keys[i%totalkeys]) > 0 {
+			fmt.Printf("key : %s", keys[i%totalkeys])
 			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[i%totalkeys], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
 				//log.Printf("Key : %s", string(key))
@@ -81,7 +62,7 @@ func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int,
 	}
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Writes is : %d\n", succoperations)
-	fmt.Printf("The time taken for all the Write operations is %s\n: ", elapsed)
+	fmt.Printf("The time taken for all the Write operations is : %s\n", elapsed)
 }
 
 func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int) {
@@ -92,7 +73,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 	//Measuring time, taken from: https://coderwall.com/p/cp5fya/measuring-execution-time-in-go
 	start := time.Now()
 	for i := 0; i < operations; i++ {
-		rand := rand.Intn(len(keys))
+		rand := rand.Intn(len(keys)-1)
 		result, error := c.Get(ctx, &pb.Key{Key: keys[rand]})
 		if error != nil {
 			log.Fatalf("Not able to get the value for key, got error : %v", err)
@@ -104,7 +85,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 	}
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Reads is : %d\n", succoperations)
-	fmt.Printf("The time taken for all the get operations is %s\n: ", elapsed)
+	fmt.Printf("The time taken for all the read operations is : %s\n", elapsed)
 }
 
 func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
@@ -116,7 +97,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	start := time.Now()
 	for i := 0; i < operations; i++ {
 		rand1 := rand.Intn(2)
-		rand2 := rand.Intn(len(keys))
+		rand2 := rand.Intn(len(keys)-1)
 		if rand1 == 0 {
 			result, error := c.Get(ctx, &pb.Key{Key: keys[rand2]})
 			if error != nil {
@@ -124,29 +105,39 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 			}
 			if result != nil {
 				readcount += 1
-				fmt.Printf(string(result.Value) + "\n")
+				//fmt.Printf(string(result.Value) + "\n")
 			}
 		} else {
 			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[rand2], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
-				//log.Printf("Key : %s", string(key))
-				//log.Printf("Value : %s", string(value))
+				//fmt.Printf("Key : %s", string(keys[rand2]))
 				log.Fatalf("Set Failed in WriteWorkload: %v", err)
 			}
 			if setresult.GetReply() == true {
 				updatecount += 1
 			}
-			log.Printf("Greeting: %t", setresult.GetReply())
+			//fmt.Printf("Greeting: %t", setresult.GetReply())
 		}
 	}
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Reads is : %d\n", readcount)
 	fmt.Printf("The number of successful Updates is : %d\n", updatecount)
-	fmt.Printf("The time taken for all the operations is %s\n: ", elapsed)
+	fmt.Printf("The time taken for all the operations is : %s\n ", elapsed)
+}
+
+// The below function is taken from:
+// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
 
 func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
-	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
+	//var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
+	var count = 10
 	fmt.Printf(string(count))
 	keyfile, _ := os.Create("keys.txt")
 	var key = ""
@@ -156,6 +147,7 @@ func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
 	}
 	keyfile.Sync()
 	keyfile.Close()
+	fmt.Printf("Generated the key data\n")
 }
 
 func main() {
@@ -166,23 +158,22 @@ func main() {
 	flag.IntVar(&opCount, "operationCount", 1000, "-operationCount <int>")
 	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
 	flag.Parse()
-	//GenerateKeys(1000)
-	log.Printf("\nClient started with the following info:\n DB-Size: %d \n Number of operations: %d\n Key Size: " +
-		"%d\n Value Size: %d\n Operation: %v", dbSize, opCount,keySize,valueSize,operation)
+
+	log.Printf("\nClient started with the following info:\nDBSize: %f GB \nNumber of operations: %d\nKey Size: " +
+		"%d bytes\nValue Size: %d bytes\nOperation: %v", dbSize, opCount, keySize, valueSize, operation)
 	conn, err := grpc.Dial(port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewKeyValueStoreClient(conn)
-	key := "des2"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	switch operation {
 	case "generate_data":
 		GenerateKeyData(dbSize, keySize, valueSize)
-		WriteWorkload(c, ctx, valueSize, 0)
+		WriteWorkload(c, ctx, valueSize, 10)
 	case "read":
 		ReadWorkload(c, ctx, opCount)
 	case "read_update":
@@ -191,23 +182,27 @@ func main() {
 		WriteWorkload(c, ctx, valueSize, opCount)
 	}
 
-	r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "10"})
-	if err != nil {
-		log.Fatalf("Set Failed: %v", err)
-	}
-	log.Printf("Greeting: %t", r.GetReply())
-	
-	r1, err1 := c.Get(ctx, &pb.Key{Key: "des2"})
-	if err1 != nil {
-                log.Fatalf("Get Failed: %v", err1)
-        }
-    fmt.Printf("%s\n",string(r1.Value))
+	//key := "des2"
+	//Test for working of Set
+	//r, err := c.Set(ctx, &pb.KeyValue{Key: key, Value: "10"})
+	//if err != nil {
+	//	log.Fatalf("Set Failed: %v", err)
+	//}
+	//log.Printf("Greeting: %t", r.GetReply())
 
+	//Test for working of Get
+	//r1, err1 := c.Get(ctx, &pb.Key{Key: "des2"})
+	//if err1 != nil {
+    //            log.Fatalf("Get Failed: %v", err1)
+    //    }
+    //fmt.Printf("%s\n",string(r1.Value))
+
+    //Getting the server stats at the end of all the operations
 	stat, err := c.GetStats(ctx, &pb.StatRequest{})
 	if err!= nil {
 		log.Fatalf("Stat retrieval failed: %v", err)
 	}
-	log.Printf("\n\nStats:\n Server- Start time: %v \n Set-Count : %d\n Get-count : %d\n GetPrefix-count : %d\n",
+	fmt.Printf("\n\nStats:\nServer Start time: %v \nSet-Count : %d\nGet-count : %d\nGetPrefix-count : %d\n",
 		stat.StartTime, stat.SetCount, stat.GetCount, stat.GetPrefixCount)
 	
 	// stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})

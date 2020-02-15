@@ -88,11 +88,11 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 }
 
 func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
-	fmt.Printf("Received: %v", in.GetKey())
+	//fmt.Printf("Received: %v\n", in.GetKey())
 	var val = ""
 	if tmp, ok := m.Get(in.GetKey()); ok {
 		val = tmp.(string)
-		fmt.Printf("Value: %v\n", val)
+		//fmt.Printf("Value: %v\n", val)
 	}
 	getcount += 1
 	return &pb.Value{Value: val}, nil
@@ -120,48 +120,36 @@ func (s* server) GetStats(ctx context.Context, in *pb.StatRequest) (*pb.Stat, er
 	return &pb.Stat{StartTime: startTime, SetCount: int32(setcount), GetCount: int32(getcount), GetPrefixCount: int32(getprefixcount)}, nil
 }
 
-// Taken from https://gist.github.com/ryanfitz/4191392
-func doEvery(d time.Duration, f func(time.Time)) {
-	for x := range time.Tick(d) {
-		f(x)
-	}
-}
-
-func Stat(t time.Time) {
-	fmt.Printf("The total number of Get operations are: %d\n", getcount)
-	fmt.Printf("The total number of Set operations are: %d\n", setcount)
-	fmt.Printf("The total number of getPrefix operations are: %d\n", getprefixcount)
-}
 
 func RestoreData() {
-	// Restoring data from the checkpointed
-	// How to handle error where there is not data in DataFile is not clear
-	data, err := ioutil.ReadFile("server/data.txt")
-	log.Printf(string(data))
+	// Restoring data from the checkpoint file
+	data, err := ioutil.ReadFile("data.txt")
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
-		for i := 0; i < len(lines); i++ { 
+		numLines := len(lines)
+		fmt.Printf("Total number of key-value pairs in data file : %d\n", numLines)
+		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
 				kv := strings.Split(string(lines[i]), ":")
-				// fmt.Println(kv[0])
-				// fmt.Println(kv[1])
 				m.Set(string(kv[0]), string(kv[1]))
 			}
 		}
 	}
-	// Restoring data that was logged after the checkpoing was done
-	data, err = ioutil.ReadFile("server/log.txt")
+	// Restoring data that was logged after the checkpoint
+	data, err = ioutil.ReadFile("log.txt")
 	if err == nil {
 		lines := strings.Split(string(data), "\n")
-		for i := 0; i < len(lines); i++ { 
+		numLines := len(lines)
+		fmt.Printf("Total number of key-value pairs in log file : %d\n", numLines)
+		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
 				kv := strings.Split(string(lines[i]), ":")
-				// fmt.Println(kv[0])
-				// fmt.Println(kv[1])
 				m.Set(string(kv[0]), string(kv[1]))
 			}
 		}
 	}
+	fmt.Printf("The data has restoration process is completed\n")
+	fmt.Printf("The total number of key-values paris in the map is: %d\n", m.Count())
 }
 
 func main() {
@@ -174,7 +162,7 @@ func main() {
 	getcount = 0
 	getprefixcount = 0
 
-	log.Printf("\nServer started with the following info:\n LogFile: %v\n DataFile: %v\n", logFile,dataFile)
+	fmt.Printf("\nServer started with the following info:\nServer start time: %s\nLogFile: %v\nDataFile: %v\n", startTime, logFile, dataFile)
 
 	RestoreData()
 	
