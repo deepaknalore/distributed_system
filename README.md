@@ -40,9 +40,18 @@ Important links to understand the underlying concepts:
 # Usage:
 Server:
 ./kvserver -logFile log.txt -dataFile data.txt
+./kvserver -logFile log.txt -dataFile data.txt -generatenewdata 1 -dbsize 4.0 -valuesize 4096
 Client:
 ./kvclient -operation read
-./kvclient -operation read_update -valueSize 512
+./kvclient -operation read_update -valueSize 4000
+./kvclient -operation get_prefix_test -prefixSize 128 -operationCount 1
+./kvclient -operation write -valueSize 4096 -operationCount 100
+
+
+
+
+
+
 
 
 
