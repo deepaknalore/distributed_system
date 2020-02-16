@@ -214,6 +214,7 @@ func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
 }
 
 func main() {
+	//https://stackoverflow.com/questions/8288679/difficulty-with-go-rand-package
 	rand.Seed(time.Now().UnixNano())
 
 	flag.IntVar(&keySize, "keySize", 128, "-keySize <int> in terms of bytes ")
