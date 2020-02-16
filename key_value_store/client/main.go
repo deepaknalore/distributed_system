@@ -13,6 +13,7 @@ import (
 	pb "store"
 	"strings"
 	"time"
+	"io"
 )
 
 var (
@@ -23,6 +24,7 @@ var (
         dbSize float64
         operation string
         opCount int
+		prefixSize int
 )
 
 const letterBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -31,6 +33,16 @@ func check(e error) {
     if e != nil {
         panic(e)
     }
+}
+
+// The below function is taken from:
+// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
 
 func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
@@ -70,6 +82,41 @@ func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int,
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Writes is : %d\n", succoperations)
 	fmt.Printf("The time taken for all the Write operations is : %s\n", elapsed)
+}
+
+func GetPrefixTest(c pb.KeyValueStoreClient, ctx context.Context, prefixsize int,  operations int) {
+	var valuecount = 0
+	var getprefixcount = 0
+	var start = time.Now()
+	var getprefixstarttime = time.Now()
+	var operationcount = 0
+	var getprefixtime = time.Duration(0)
+	for time.Since(start) < time.Duration(3*time.Minute) && operationcount < operations {
+		operationcount += 1
+		var key = RandStringBytes(prefixsize)
+		fmt.Printf(key)
+		getprefixstarttime = time.Now()
+		stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
+		if err == nil {
+			getprefixcount += 1
+		}
+		for {
+			_, err2 := stream.Recv()
+			if err2 == io.EOF {
+				break
+			}
+			if err2 != nil {
+				log.Fatalf("GetPrefix Failed: %v", err2)
+			}
+			//fmt.Printf("%s\n", value)
+			valuecount += 1
+		}
+		getprefixtime += time.Since(getprefixstarttime)
+	}
+	fmt.Printf("Total number of operations performed is : %d\n", operationcount)
+	fmt.Printf("The number of successful getPrefix operations is : %d\n", getprefixcount)
+	fmt.Printf("Get prefix latency : %s\n", time.Duration(int64(getprefixtime)/int64(getprefixcount)))
+	fmt.Printf("Average number of values returned is : %d\n", int(float64(valuecount)/math.Max(float64(getprefixcount), 1.0)))
 }
 
 func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int) {
@@ -151,16 +198,6 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	fmt.Printf("Overall latency : %s\n", time.Duration(int64(elapsed)/int64(readcount+updatecount)))
 }
 
-// The below function is taken from:
-// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
-func RandStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
 func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
 	var count = int(float64(dbdata)*math.Pow(10, 9)/(float64(valuesize)))
 	//var count = 10
@@ -177,11 +214,13 @@ func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 
 	flag.IntVar(&keySize, "keySize", 128, "-keySize <int> in terms of bytes ")
 	flag.IntVar(&valueSize, "valueSize", 512, "-valueSize <int> in terms of bytes")
 	flag.Float64Var(&dbSize, "dbSize", 1.0, "-dbSize <float64> in terms of GB")
 	flag.IntVar(&opCount, "operationCount", 1000, "-operationCount <int>")
+	flag.IntVar(&prefixSize, "prefixSize", 4, "-prefixSize <int>")
 	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
 	flag.Parse()
 
@@ -206,6 +245,8 @@ func main() {
 		ReadUpdateWorkload(c, ctx, valueSize, opCount)
 	case "write":
 		WriteWorkload(c, ctx, valueSize, opCount)
+	case "get_prefix_test":
+		GetPrefixTest(c, ctx, prefixSize, opCount)
 	}
 
 	//key := "des2"

@@ -116,7 +116,7 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 	for item := range m.Iter() {
 		if strings.HasPrefix(item.Key,in.GetKey()) {
 			val := item.Val.(string)
-			log.Printf(val)
+			//log.Printf(val)
 			if err := stream.Send(&pb.Value{Value: val}); err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func GenerateKeyValueData(dbdata float64, keysize int, valuesize int) {
 }
 
 func main() {
-
+	rand.Seed(time.Now().UnixNano())
 	fmt.Printf("Shard count: %d", cmap.SHARD_COUNT)
 	startTime = time.Now().String()
 	flag.StringVar(&logFile, "logFile", "log.txt", "-log <String> - file for writing logs")
