@@ -75,7 +75,8 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 	//Measuring time, taken from: https://coderwall.com/p/cp5fya/measuring-execution-time-in-go
 	start := time.Now()
 	var readstart = time.Now()
-	for i := 0; i < operations; i++ {
+	//for i := 0; i < operations; i++ {
+	for time.Since(start) < time.Duration(3*time.Minute) {
 		readstart = time.Now()
 		result, error := c.Get(ctx, &pb.Key{Key: keys[rand.Intn(len(keys)-1)]})
 		if error != nil {
@@ -105,7 +106,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	start := time.Now()
 	var readstart = time.Now()
 	var updatestart = time.Now()
-	for i := 0; i < operations; i++ {
+	for time.Since(start) < time.Duration(3*time.Minute) {
 		rand1 := rand.Intn(2)
 		rand2 := rand.Intn(len(keys)-1)
 		if rand1 == 0 {
@@ -171,15 +172,15 @@ func GenerateKeyData(dbdata float64, keysize int, valuesize int) {
 
 func main() {
 
-	flag.IntVar(&keySize, "keySize", 4, "-keySize <int> in terms of bytes ")
-	flag.IntVar(&valueSize, "valueSize", 10, "-valueSize <int> in terms of bytes")
+	flag.IntVar(&keySize, "keySize", 128, "-keySize <int> in terms of bytes ")
+	flag.IntVar(&valueSize, "valueSize", 512, "-valueSize <int> in terms of bytes")
 	flag.Float64Var(&dbSize, "dbSize", 1.0, "-dbSize <float64> in terms of GB")
 	flag.IntVar(&opCount, "operationCount", 1000, "-operationCount <int>")
 	flag.StringVar(&operation, "operation", "read", "-operation <String> - read,read_write,write,stats")
 	flag.Parse()
 
-	log.Printf("\nClient started with the following info:\nDBSize: %f GB \nNumber of operations: %d\nKey Size: " +
-		"%d bytes\nValue Size: %d bytes\nOperation: %v", dbSize, opCount, keySize, valueSize, operation)
+	log.Printf("\nClient started with the following info:\nDBSize: %f GB \nKey Size: " +
+		"%d bytes\nValue Size: %d bytes\nOperation: %v", dbSize, keySize, valueSize, operation)
 	conn, err := grpc.Dial(port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)

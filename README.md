@@ -41,7 +41,8 @@ Important links to understand the underlying concepts:
 Server:
 ./kvserver -logFile log.txt -dataFile data.txt
 Client:
-./kvclient -operationCount 10 -keySize 128 -valueSize 512 -operation generate_data -dbSize 1.0
+./kvclient -operation read
+./kvclient -operation read_update -valueSize 512
 
 
 

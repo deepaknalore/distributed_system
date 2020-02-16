@@ -202,7 +202,7 @@ func main() {
 
 	fmt.Printf("\nServer started with the following info:\nServer start time: %s\nLogFile: %v\nDataFile: %v\n", startTime, logFile, dataFile)
 
-	//GenerateKeyValueData(1.0, 128, 512)
+	//GenerateKeyValueData(1.0, 128, 4096)
 	RestoreData()
 	
 	lis, err := net.Listen("tcp", port)
