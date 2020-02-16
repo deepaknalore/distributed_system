@@ -68,53 +68,66 @@ func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int,
 
 func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int) {
 	var succoperations = 0
+	var readtime = time.Duration(0)
 	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	//Measuring time, taken from: https://coderwall.com/p/cp5fya/measuring-execution-time-in-go
 	start := time.Now()
+	var readstart = time.Now()
 	for i := 0; i < operations; i++ {
-		rand := rand.Intn(len(keys)-1)
-		result, error := c.Get(ctx, &pb.Key{Key: keys[rand]})
+		readstart = time.Now()
+		result, error := c.Get(ctx, &pb.Key{Key: keys[rand.Intn(len(keys)-1)]})
 		if error != nil {
 			//log.Fatalf("Not able to get the value for key %v, got error : %v", keys[rand], err)
 		}
 		if result != nil {
+			readtime += time.Since(readstart)
 			succoperations = succoperations + 1
 			//fmt.Printf(string(result.Value) + "\n")
 		}
 	}
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Reads is : %d\n", succoperations)
-	fmt.Printf("The time taken for all the read operations is : %s\n", elapsed)
+	fmt.Printf("Expreiment elapsed time : %s\n", elapsed)
+	fmt.Printf("The time taken for all the read operations is : %s\n", readtime)
+	fmt.Printf("Read latency : %s\n", time.Duration(int64(readtime)/int64(succoperations)))
 }
 
 func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
 	var readcount = 0
 	var updatecount = 0
+	var readtime = time.Duration(0)
+	var updatetime = time.Duration(0)
 	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
 	start := time.Now()
+	var readstart = time.Now()
+	var updatestart = time.Now()
 	for i := 0; i < operations; i++ {
 		rand1 := rand.Intn(2)
 		rand2 := rand.Intn(len(keys)-1)
 		if rand1 == 0 {
+			readstart = time.Now()
 			result, error := c.Get(ctx, &pb.Key{Key: keys[rand2]})
 			if error != nil {
 				//log.Fatalf("Not able to get the value for key, got error : %v", err)
 			}
 			if result != nil {
+				readtime += time.Since(readstart)
 				readcount += 1
 				//fmt.Printf(string(result.Value) + "\n")
 			}
 		} else {
+			updatestart = time.Now()
 			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[rand2], Value: RandStringBytes(valuesize)})
 			if seterror != nil {
 				//fmt.Printf("Key : %s", string(keys[rand2]))
 				//log.Fatalf("Set Failed in WriteWorkload: %v", err)
 			}
 			if setresult.GetReply() == true {
+				updatetime += time.Since(updatestart)
 				updatecount += 1
 			}
 			//fmt.Printf("Greeting: %t", setresult.GetReply())
@@ -123,7 +136,12 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Reads is : %d\n", readcount)
 	fmt.Printf("The number of successful Updates is : %d\n", updatecount)
-	fmt.Printf("The time taken for all the operations is : %s\n ", elapsed)
+	fmt.Printf("The time taken for all the operations is : %s\n", elapsed)
+	fmt.Printf("The time taken for read operations is : %s\n", readtime)
+	fmt.Printf("The time taken for write operations is : %s\n", updatetime)
+	fmt.Printf("Read latency : %s\n", time.Duration(int64(readtime)/int64(readcount)))
+	fmt.Printf("Update latency : %s\n", time.Duration(int64(updatetime)/int64(updatecount)))
+	fmt.Printf("Overall latency : %s\n", time.Duration(int64(elapsed)/int64(readcount+updatecount)))
 }
 
 // The below function is taken from:
