@@ -34,33 +34,39 @@ func check(e error) {
 }
 
 func WriteWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize int, operations int) {
+	var f, _ = os.Create("durability.txt")
 	var succoperations = 0
 	data, err := ioutil.ReadFile("keys.txt")
 	check(err)
 	keys := strings.Split(string(data), "\n")
-	writes := len(keys)-1
-	//if operations < writes {
-	//	writes = operations
-	//}
+	writes := operations
 	fmt.Printf("The number of writes that will be performed : %d\n", writes)
 	totalkeys := len(keys)
 	start := time.Now()
 	for i := 0; i < writes; i++ {
-		if len(keys[i%totalkeys]) > 0 {
-			fmt.Printf("key : %s", keys[i%totalkeys])
-			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: keys[i%totalkeys], Value: RandStringBytes(valuesize)})
+		var rand1 = rand.Intn(totalkeys-1)
+		var key = keys[rand1%totalkeys]
+		if len(key) > 0 {
+			//fmt.Printf("key : %s", key)
+			var val = RandStringBytes(valuesize)
+			f.WriteString(key+":"+val+"\n")
+			f.Sync()
+			setresult, seterror := c.Set(ctx, &pb.KeyValue{Key: key, Value: val})
 			if seterror != nil {
 				//log.Printf("Key : %s", string(key))
 				//log.Printf("Value : %s", string(value))
-				log.Fatalf("Set Failed in WriteWorkload: %v", err)
+				//log.Fatalf("Set Failed in WriteWorkload: %v", err)
 				//log.Printf("Set Failed in WriteWorkload: %v", err)
 			}
 			if setresult.GetReply() == true {
+				f.WriteString("Above set was successfule")
+				f.Sync()
 				succoperations += 1
 			}
 			log.Printf("Greeting: %t", setresult.GetReply())
 		}
 	}
+	f.Close()
 	elapsed := time.Since(start)
 	fmt.Printf("The number of successful Writes is : %d\n", succoperations)
 	fmt.Printf("The time taken for all the Write operations is : %s\n", elapsed)
@@ -106,7 +112,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	start := time.Now()
 	var readstart = time.Now()
 	var updatestart = time.Now()
-	for time.Since(start) < time.Duration(3*time.Minute) {
+	for time.Since(start) < time.Duration(6*time.Minute) {
 		rand1 := rand.Intn(2)
 		rand2 := rand.Intn(len(keys)-1)
 		if rand1 == 0 {

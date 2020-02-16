@@ -14,6 +14,7 @@ import (
 	"flag"
 	"math"
 	"math/rand"
+	"strconv"
 
 	"github.com/orcaman/concurrent-map"
 	//"github.com/nithinv13/concurrent-map"
@@ -45,6 +46,9 @@ var (
 	setcount int
 	getcount int
 	getprefixcount int
+	generatenewdata int
+	dbsize float64
+	valuesize int
 )
 
 type server struct {
@@ -52,7 +56,6 @@ type server struct {
 }
 
 func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error) {
-
 	if setcount == MAX_LOG_SET_COUNT {
 		MAX_LOG_SET_COUNT = 10*MAX_LOG_SET_COUNT
 		fmt.Printf("Checkpoint triggered\n")
@@ -64,7 +67,7 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 
 		var sanpBuffer bytes.Buffer
 		for item := range m.Iter() {
-			sanpBuffer.WriteString(item.Key+":"+item.Val.(string)+"\n")
+			sanpBuffer.WriteString(item.Key+":"+strconv.Itoa(len(item.Val.(string)))+":"+item.Val.(string)+"\n")
 		}
 		if _, tempWriteErr := tempFile.WriteString(sanpBuffer.String()); tempWriteErr != nil {
 			tempFile.Sync()
@@ -81,7 +84,7 @@ func (s *server) Set(ctx context.Context, in *pb.KeyValue) (*pb.Response, error)
 	key := in.GetKey()
 	val := in.GetValue()
 
-	if _, err := f.WriteString(key+":"+val+"\n"); err != nil {
+	if _, err := f.WriteString(key+":"+strconv.Itoa(len(val))+":"+val+"\n"); err != nil {
 		f.Close()
 		log.Fatal(err)
 	}
@@ -131,6 +134,8 @@ func (s* server) GetStats(ctx context.Context, in *pb.StatRequest) (*pb.Stat, er
 
 
 func RestoreData() {
+	fmt.Printf("Starting the restoration process\n")
+	var restorestart = time.Now()
 	// Restoring data from the checkpoint file
 	data, err := ioutil.ReadFile("data.txt")
 	if err == nil {
@@ -140,7 +145,10 @@ func RestoreData() {
 		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
 				kv := strings.Split(string(lines[i]), ":")
-				m.Set(string(kv[0]), string(kv[1]))
+				if kv[1] != strconv.Itoa(len(kv[2])) {
+					continue
+				}
+				m.Set(string(kv[0]), string(kv[2]))
 			}
 		}
 	}
@@ -153,12 +161,17 @@ func RestoreData() {
 		for i := 0; i < numLines; i++ {
 			if len(lines[i]) > 0 {
 				kv := strings.Split(string(lines[i]), ":")
-				m.Set(string(kv[0]), string(kv[1]))
+				if kv[1] != strconv.Itoa(len(kv[2])) {
+					continue
+				}
+				m.Set(string(kv[0]), string(kv[2]))
 			}
 		}
 	}
+	var elapsed = time.Since(restorestart)
 	fmt.Printf("The data has restoration process is completed\n")
 	fmt.Printf("The total number of key-values paris in the map is: %d\n", m.Count())
+	fmt.Printf("The time taken for restoration process is: %s\n", elapsed)
 }
 
 func RandStringBytes(n int) string {
@@ -179,8 +192,9 @@ func GenerateKeyValueData(dbdata float64, keysize int, valuesize int) {
 	for i := 0; i < count; i++ {
 		var key = RandStringBytes(keysize)
 		var val = RandStringBytes(valuesize)
+		//var md5hash = md5.Sum([]byte(val))
 		keyfile.WriteString(key + "\n")
-		datafile.WriteString(key+":"+val+"\n")
+		datafile.WriteString(key+":"+strconv.Itoa(len(val))+":"+val+"\n")
 	}
 	keyfile.Sync()
 	keyfile.Close()
@@ -195,6 +209,9 @@ func main() {
 	startTime = time.Now().String()
 	flag.StringVar(&logFile, "logFile", "log.txt", "-log <String> - file for writing logs")
 	flag.StringVar(&dataFile, "dataFile", "data.txt", "-data <String> - file for writing data")
+	flag.IntVar(&generatenewdata, "generatenewdata", 0, "-generatenewdata <int> - 1 to generate new data, 0 to restore previous data")
+	flag.Float64Var(&dbsize, "dbsize", 1.0, "-dbsize <float64> - Database size to initialize in GB")
+	flag.IntVar(&valuesize, "valuesize", 4000, "-valuesize <int> - Value size (bytes) to be used to initialize the DB")
 	flag.Parse()
 	setcount = 0
 	getcount = 0
@@ -202,7 +219,9 @@ func main() {
 
 	fmt.Printf("\nServer started with the following info:\nServer start time: %s\nLogFile: %v\nDataFile: %v\n", startTime, logFile, dataFile)
 
-	//GenerateKeyValueData(1.0, 128, 4096)
+	if generatenewdata == 1 {
+		GenerateKeyValueData(dbsize, 128, valuesize)
+	}
 	RestoreData()
 	
 	lis, err := net.Listen("tcp", port)
