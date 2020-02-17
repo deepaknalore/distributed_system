@@ -14,9 +14,11 @@ PROTOC_GEN_GO := $(GOROOT)/bin/protoc-gen-go
 .PHONY: setup server client
 all: server client
 server:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(SERVERBINARY) server/main.go
+	$(GOBUILD) -o $(SERVERBINARY) server/main.go
+	#GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(SERVERBINARY) server/main.go
 client:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CLIENTBINARY) client/main.go
+	$(GOBUILD) -o $(CLIENTBINARY) client/main.go
+	#GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(CLIENTBINARY) client/main.go
 setup:
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	mkdir $(GOBIN)/src/store

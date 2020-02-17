@@ -38,8 +38,8 @@ var successfulgetprefixcount = 0
 // 	}
 
 var (
-	//port = ":50051"
-	port = ":56567"
+	port = ":50051"
+	//port = ":56567"
 	logFile string
 	dataFile string
 	startTime string
@@ -112,7 +112,7 @@ func (s *server) Get(ctx context.Context, in *pb.Key) (*pb.Value, error) {
 
 func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) error {
 	counter := 0
-	log.Printf("%d", m.Count())
+	//log.Printf("%d", m.Count())
 	for item := range m.Iter() {
 		if strings.HasPrefix(item.Key,in.GetKey()) {
 			val := item.Val.(string)
@@ -124,7 +124,7 @@ func (s *server) GetPrefix(in *pb.Key, stream pb.KeyValueStore_GetPrefixServer) 
 		}
 	}	
 	getprefixcount += 1
-	log.Printf("Sent %d items", counter)
+	//log.Printf("Sent %d items", counter)
 	return nil
 }
 

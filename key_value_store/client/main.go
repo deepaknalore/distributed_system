@@ -17,8 +17,8 @@ import (
 )
 
 var (
-        //port = "localhost:50051"
-        port = "10.10.1.2:56567"
+        port = "localhost:50051"
+        //port = "10.10.1.2:56567"
         keySize int
         valueSize int
         dbSize float64
@@ -94,7 +94,7 @@ func GetPrefixTest(c pb.KeyValueStoreClient, ctx context.Context, prefixsize int
 	for time.Since(start) < time.Duration(3*time.Minute) && operationcount < operations {
 		operationcount += 1
 		var key = RandStringBytes(prefixsize)
-		fmt.Printf(key)
+		//fmt.Printf(key)
 		getprefixstarttime = time.Now()
 		stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
 		if err == nil {
@@ -129,7 +129,7 @@ func ReadWorkload(c pb.KeyValueStoreClient, ctx context.Context, operations int)
 	start := time.Now()
 	var readstart = time.Now()
 	//for i := 0; i < operations; i++ {
-	for time.Since(start) < time.Duration(3*time.Minute) {
+	for time.Since(start) < time.Duration(3*time.Minute) && succoperations < operations {
 		readstart = time.Now()
 		result, error := c.Get(ctx, &pb.Key{Key: keys[rand.Intn(len(keys)-1)]})
 		if error != nil {
@@ -159,7 +159,7 @@ func ReadUpdateWorkload(c pb.KeyValueStoreClient, ctx context.Context, valuesize
 	start := time.Now()
 	var readstart = time.Now()
 	var updatestart = time.Now()
-	for time.Since(start) < time.Duration(6*time.Minute) {
+	for time.Since(start) < time.Duration(3*time.Minute) && readcount+updatecount < operations*2 {
 		rand1 := rand.Intn(2)
 		rand2 := rand.Intn(len(keys)-1)
 		if rand1 == 0 {
@@ -248,6 +248,14 @@ func main() {
 		WriteWorkload(c, ctx, valueSize, opCount)
 	case "get_prefix_test":
 		GetPrefixTest(c, ctx, prefixSize, opCount)
+	case "stat":
+		stat, err := c.GetStats(ctx, &pb.StatRequest{})
+		if err!= nil {
+			log.Fatalf("Stat retrieval failed: %v", err)
+		}
+		log.Printf("\n\nStats:\nServer Start time: %v \nSet-Count : %d\nGet-count : %d\nGetPrefix-count : %d\n",
+			stat.StartTime, stat.SetCount, stat.GetCount, stat.GetPrefixCount)
+
 	}
 
 	//key := "des2"
@@ -266,12 +274,12 @@ func main() {
     //fmt.Printf("%s\n",string(r1.Value))
 
     //Getting the server stats at the end of all the operations
-	stat, err := c.GetStats(ctx, &pb.StatRequest{})
-	if err!= nil {
-		log.Fatalf("Stat retrieval failed: %v", err)
-	}
-	fmt.Printf("\n\nStats:\nServer Start time: %v \nSet-Count : %d\nGet-count : %d\nGetPrefix-count : %d\n",
-		stat.StartTime, stat.SetCount, stat.GetCount, stat.GetPrefixCount)
+	//stat, err := c.GetStats(ctx, &pb.StatRequest{})
+	//if err!= nil {
+	//	log.Fatalf("Stat retrieval failed: %v", err)
+	//}
+	//fmt.Printf("\n\nStats:\nServer Start time: %v \nSet-Count : %d\nGet-count : %d\nGetPrefix-count : %d\n",
+	//	stat.StartTime, stat.SetCount, stat.GetCount, stat.GetPrefixCount)
 	
 	// stream, err := c.GetPrefix(ctx, &pb.Key{Key: key})
 	// for {

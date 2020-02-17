@@ -1,9 +1,15 @@
-#!/bin/bash
+!/bin/bash
 
 trap "exit" INT TERM ERR
 trap "kill 0" EXIT
 
-./kvserver &
-./kvclient &
-
-sleep 100
+./kvserver -logFile log.txt -dataFile data.txt -generatenewdata 1 -dbsize 0.5 -valuesize 512 &
+sleep 40
+for (( c=1; c<=$1; c++ ))
+do
+        ./kvclient -operation read_update -valueSize 512 -operationCount 10000 &
+done
+./kvclient -operation get_prefix_test -valueSize 512 -operationCount 1000 &
+sleep 200
+./kvclient -operation stat &
+sleep 10
